@@ -9,10 +9,10 @@
  * Departamento de Ingeniería y Tecnología de Computadores
  * Facultad de Informática de la Universidad de Murcia
  *
- * Alumnos: APELLIDOS, NOMBRE
+ * Alumnos: ANTELO RIBERA, MARIO
  *          APELLIDOS, NOMBRE
  *
- * Convocatoria: FEBRERO/JUNIO/JULIO
+ * Convocatoria: FEBRERO
  */
 
 
@@ -34,8 +34,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-//(mirar) librerias añadidas
-#include <sys/stat.h> 
+#include <sys/stat.h>
 #include <pwd.h>
 #include <libgen.h>
 
@@ -1034,29 +1033,40 @@ void free_cmd(struct cmd* cmd)
 char* get_cmd()
 {
     char* buf;
-	struct passwd* pw;
-	char ruta[PATH_MAX];
-//(mirar) getuid no devuelve error.
-	uid_t uid = getuid();
-	pw = getpwuid(uid);
+	  struct passwd* pw;
+	  char ruta[PATH_MAX];
 
-	if(!pw){ //--> si pw no es null
-		perror("getpwuid");
-		exit(EXIT_FAILURE); //ABORTAMOS LA APLICACION
-	}
-	
-	if(!getcwd(ruta, PATH_MAX)){
-		perror("getcwd");
-		exit(EXIT_FAILURE);
-	}
-	char *name = basename(ruta);
-	char * prompt; //= malloc();// @ > space y el 0 al final 
+    uid_t uid = getuid();
+	  pw = getpwuid(uid);
 
+    if(!pw){
+		    perror("getpwuid");
+		      exit(EXIT_FAILURE); //ABORTAMOS LA APLICACION
+	  }
 
-	sprintf(prompt,strlen(pw->pw_name)+1+strlen(name)+3);
+  	if(!getcwd(ruta, PATH_MAX)){
+  		perror("getcwd");
+  		exit(EXIT_FAILURE);
+  	}
 
-    // Lee la orden tecleada por el usuario
-    buf = readline ("simple>");
+    char *dirname = basename(ruta);
+    if(!dirname){
+  		perror("basename");
+  		exit(EXIT_FAILURE);
+  	}
+    //conformamos la linea a mostrar en el prompt
+	 char prompt[PATH_MAX]; //= malloc();// @ > space y el 0 al final
+   int i = sprint(prompt, "%s@%s> ", pw->pw_name, dirname)
+   //comprobamos que el tamaño del buffer sea suficiente
+   if(i <=0){
+     perror("sprintf");
+     exit(EXIT_FAILURE);
+   }elseif(i >= PATH_MAX){
+     perror("sprintf necesita buffer con mayor tamaño");
+     exit(EXIT_FAILURE);
+   }
+	    // Lee la orden tecleada por el usuario
+    buf = readline (prompt);
 
     // Si el usuario ha escrito una orden, almacenarla en la historia.
     if(buf)
