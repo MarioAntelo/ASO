@@ -774,6 +774,15 @@ void run_cmd(struct cmd* cmd)
     {
         case EXEC:
             ecmd = (struct execcmd*) cmd;
+
+            //compruebo si el comando introducido es un comando interno
+            //(mirar) que realiza la funcion exit
+            int result = run_command_interno(ecmd->argv);
+            if (result==0){
+                exit(0);
+            }elseif(result == 1)
+              exit(1);
+
             if (fork_or_panic("fork EXEC") == 0)
                 exec_cmd(ecmd);
             TRY( wait(NULL) );
@@ -784,10 +793,8 @@ void run_cmd(struct cmd* cmd)
             if (fork_or_panic("fork REDR") == 0)
             {
                 TRY( close(rcmd->fd) );
-		// (mirar) agrego el modo de apertura de open
-		// S_IRUSR | S_IWUSR Comprobar todos los modos
-                if ((fd = open(rcmd->file, rcmd->flags, S_IRWXU)) < 0)
-                {
+                //a la llamada open se agrega el modo S_IRWX_
+                if ((fd = open(rcmd->file, rcmd->flags, S_IRWXU)) < 0){
                     perror("open");
                     exit(EXIT_FAILURE);
                 }
@@ -803,21 +810,20 @@ void run_cmd(struct cmd* cmd)
 
         case LIST:
             lcmd = (struct listcmd*) cmd;
-            run_cmd(lcmd->left);
+            if(run_cmd(lcmd->left)==1)
+                return 1;
             run_cmd(lcmd->right);
             break;
 
         case PIPE:
             pcmd = (struct pipecmd*)cmd;
-            if (pipe(p) < 0)
-            {
+            if (pipe(p) < 0){
                 perror("pipe");
                 exit(EXIT_FAILURE);
             }
 
             // Ejecución del hijo de la izquierda
-            if (fork_or_panic("fork PIPE left") == 0)
-            {
+            if (fork_or_panic("fork PIPE left") == 0){
                 TRY( close(1) );
                 TRY( dup(p[1]) );
                 TRY( close(p[0]) );
@@ -1081,8 +1087,7 @@ char* get_cmd()
  ******************************************************************************/
 
 
-void help(int argc, char **argv)
-{
+void help(int argc, char **argv){
     fprintf(stdout, "Usage: %s [-d N] [-h]\n\
             shell simplesh v%s\n\
             Options: \n\
@@ -1092,8 +1097,7 @@ void help(int argc, char **argv)
 }
 
 
-void parse_args(int argc, char** argv)
-{
+void parse_args(int argc, char** argv){
     int option = 0;
 
     // Bucle de procesamiento de parámetros
@@ -1110,6 +1114,64 @@ void parse_args(int argc, char** argv)
         }
     }
 }
+/*
+* Sub-rutinas para Comandos internos
+*/
+
+int run_command_interno(char **command){
+  //trato comandos internos
+	if(strcmp(com[0], "cwd") == 0){
+        run_cwd();
+		    return 0;
+	}
+  if(strcmp(com[0], "exit") == 0){
+		    return 1;
+	}
+  if(strcmp(com[0], "cd") == 0){
+        run_cd(command[1]);
+        return 0;
+  }
+
+  return -1;
+}
+
+/*
+* Muestra la ruta actual
+*/
+
+void run_cwd(){
+  char buff[PATH_MAX];
+  char* ruta = getcwd(buff, PATH_MAX);
+  if (!ruta) {
+      perror("getcwd");
+      exit(EXIT_FAILURE);
+  }
+  fprintf(stderr, "simplesh: cwd: ");
+  printf("%s\n", ruta);
+}
+
+run_cd(char* dir){
+  int errorcd;
+  char* ruta;
+  if(!dir){
+    ruta = getenv("HOME")
+    if(!ruta){
+      perror("cd getenv");
+      exit(EXIT_FAILURE);
+    }
+  }elseif(strcmp(dir, "-")==0){
+    ruta = getenv("OLDPWD");
+    if(!ruta){
+      perror("cd getenv");
+      exit(EXIT_FAILURE);
+    }
+  }else
+    ruta = dir;
+  
+  if(chdir(ruta) == -1)
+    perror(ruta);
+}
+
 
 
 int main(int argc, char** argv)
@@ -1136,7 +1198,8 @@ int main(int argc, char** argv)
             print_cmd(cmd); printf("\n"); fflush(NULL); } );
 
         // Ejecuta la línea de órdenes
-        run_cmd(cmd);
+        if(run_cmd(cmd)==1)
+          exit(0);
 
         // Libera la memoria de las estructuras `cmd`
         free_cmd(cmd);
