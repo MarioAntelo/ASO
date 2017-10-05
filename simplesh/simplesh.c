@@ -99,7 +99,9 @@ static const char SYMBOLS[] = "<|>&;()";
 /******************************************************************************
  * Funciones auxiliares
  ******************************************************************************/
-
+int run_command_interno(char**);
+void run_cwd();
+void run_cd(char*);
 
 // Imprime el mensaje de error
 void error(const char *fmt, ...)
@@ -666,7 +668,7 @@ struct cmd* parse_redr(struct cmd* cmd, char** start_of_str, char* end_of_str)
                 cmd = redrcmd(cmd, start_of_token, end_of_token, O_RDONLY, 0);
                 break;
             case '>':
-                cmd = redrcmd(cmd, start_of_token, end_of_token, O_RDWR|O_CREAT, 1);
+                cmd = redrcmd(cmd, start_of_token, end_of_token, O_RDWR|O_CREAT|O_TRUNC, 1);
                 break;
             case '+': // >>
 		//**** se añade el append  (mirar)
@@ -755,7 +757,7 @@ void exec_cmd(struct execcmd* ecmd)
 }
 
 
-void run_cmd(struct cmd* cmd)
+int run_cmd(struct cmd* cmd)
 {
     struct execcmd* ecmd;
     struct redrcmd* rcmd;
@@ -768,7 +770,7 @@ void run_cmd(struct cmd* cmd)
 
     DPRINTF(DBG_TRACE, "STR\n");
 
-    if(cmd == 0) return;
+    if(cmd == 0) return 0;
 
     switch(cmd->type)
     {
@@ -776,13 +778,13 @@ void run_cmd(struct cmd* cmd)
             ecmd = (struct execcmd*) cmd;
 
             //compruebo si el comando introducido es un comando interno
-            //(mirar) que realiza la funcion exit
             int result = run_command_interno(ecmd->argv);
-            if (result==0){
-                exit(0);
-            }elseif(result == 1)
-              exit(1);
+            if (result== 0){
+                return 0;
+            }else if(result == 1)
+                return 1;
 
+            //comandos no internos
             if (fork_or_panic("fork EXEC") == 0)
                 exec_cmd(ecmd);
             TRY( wait(NULL) );
@@ -884,8 +886,8 @@ void run_cmd(struct cmd* cmd)
     }
 
     DPRINTF(DBG_TRACE, "END\n");
+    return 0;
 }
-
 
 void print_cmd(struct cmd* cmd)
 {
@@ -1062,12 +1064,12 @@ char* get_cmd()
   	}
     //conformamos la linea a mostrar en el prompt
 	 char prompt[PATH_MAX]; //= malloc();// @ > space y el 0 al final
-   int i = sprint(prompt, "%s@%s> ", pw->pw_name, dirname)
+   int i = sprintf(prompt, "%s@%s> ", pw->pw_name, dirname);
    //comprobamos que el tamaño del buffer sea suficiente
-   if(i <=0){
+   if(i <=0 ){
      perror("sprintf");
      exit(EXIT_FAILURE);
-   }elseif(i >= PATH_MAX){
+   }else if(i >= PATH_MAX){
      perror("sprintf necesita buffer con mayor tamaño");
      exit(EXIT_FAILURE);
    }
@@ -1119,20 +1121,21 @@ void parse_args(int argc, char** argv){
 */
 
 int run_command_interno(char **command){
-  //trato comandos internos
-	if(strcmp(com[0], "cwd") == 0){
-        run_cwd();
-		    return 0;
-	}
-  if(strcmp(com[0], "exit") == 0){
-		    return 1;
-	}
-  if(strcmp(com[0], "cd") == 0){
-        run_cd(command[1]);
-        return 0;
+  if (ecmd->argv[0] != 0) {
+    //trato comandos internos
+    if(strcmp(command[0], "cwd") == 0){
+          run_cwd();
+    }else if(strcmp(command[0], "exit") == 0){
+          return 1;
+    }
+    if(strcmp(command[0], "cd") == 0){
+          run_cd(command[1]);
+          return 0;
+    }
+
   }
 
-  return -1;
+  return 0;
 }
 
 /*
@@ -1150,16 +1153,16 @@ void run_cwd(){
   printf("%s\n", ruta);
 }
 
-run_cd(char* dir){
+void run_cd(char* dir){
   int errorcd;
   char* ruta;
   if(!dir){
-    ruta = getenv("HOME")
+    ruta = getenv("HOME");
     if(!ruta){
       perror("cd getenv");
       exit(EXIT_FAILURE);
     }
-  }elseif(strcmp(dir, "-")==0){
+  }else if(strcmp(dir, "-")==0){
     ruta = getenv("OLDPWD");
     if(!ruta){
       perror("cd getenv");
@@ -1167,7 +1170,7 @@ run_cd(char* dir){
     }
   }else
     ruta = dir;
-  
+
   if(chdir(ruta) == -1)
     perror(ruta);
 }
@@ -1198,8 +1201,9 @@ int main(int argc, char** argv)
             print_cmd(cmd); printf("\n"); fflush(NULL); } );
 
         // Ejecuta la línea de órdenes
-        if(run_cmd(cmd)==1)
-          exit(0);
+        //compruebo si el comando o grupo de comandos contenia exit
+        if(run_cmd(cmd)== 1)
+            exit(0);
 
         // Libera la memoria de las estructuras `cmd`
         free_cmd(cmd);
