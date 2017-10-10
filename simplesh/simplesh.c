@@ -814,7 +814,8 @@ int run_cmd(struct cmd* cmd)
             lcmd = (struct listcmd*) cmd;
             if(run_cmd(lcmd->left)==1)
                 return 1;
-            run_cmd(lcmd->right);
+            if(run_cmd(lcmd->right)==1)
+                    return 1;
             break;
 
         case PIPE:
@@ -1121,7 +1122,7 @@ void parse_args(int argc, char** argv){
 */
 
 int run_command_interno(char **command){
-  if (ecmd->argv[0] != 0) {
+  if (command[0] != 0) {
     //trato comandos internos
     if(strcmp(command[0], "cwd") == 0){
           run_cwd();
@@ -1132,10 +1133,8 @@ int run_command_interno(char **command){
           run_cd(command[1]);
           return 0;
     }
-
   }
-
-  return 0;
+  return -1;
 }
 
 /*
