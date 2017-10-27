@@ -101,6 +101,23 @@ int run_command_interno(char**);
 void run_cwd();
 int run_cd(char*);
 int run_trod(char**);
+int run_args(char**);
+
+// Estructura con las opciones que contiene el comando trod
+struct opc_trod {
+        int flag_t;
+        int flag_d;
+        int flag_c;
+        int valor_t;
+};
+
+// Estructura con las opciones que contiene el comando args
+struct opc_args{
+		int flag_h;	
+};
+
+//variables necesarias
+static struct opc_trod opc;
 
 //Declaraciones para variables de entorno
 extern char **environ;
@@ -1138,6 +1155,8 @@ int run_command_interno(char **command){
                         run_cd(command[1]);
                 }else if(strcmp(command[0], "trod") == 0) {
                         run_trod(command);
+                }else if(strcmp(command[0], "args") == 0){
+                		run_args(command);
                 }else
                         return -1;
         }
@@ -1246,6 +1265,8 @@ int procesa_getopt(char **command){
         return 0;  //si hemos procesado los argumentos se devuelve 0
 }
 
+//Función trod
+
 int run_trod(char **command){
         char* set1;
         char* set2;
@@ -1310,12 +1331,98 @@ int run_trod(char **command){
 
         return 0;
 }
-// Manejador de señal CHLD
 
+
+
+
+//******************
+//***Comando args
+void help_args(){
+        printf("Uso: args [-d DELIMS] [-p NPROCS ] [-h ] [COMANDO [PARAMETROS]] ...\n");
+        printf("\tOpciones:\n");
+        printf("\t-d DELIMS Caracteres delimitadores entre cadenas para COMANDO\n");
+        printf("\t-p NPROCS Número máximo de ejecuciones en paralelo de COMANDO\n");
+        printf("\t--h help\n");
+}
+
+int procAR_getopt(char **command){
+        int cant_param=0;
+        int opt =0;
+        char *valor=NULL;
+
+        for(int i=0; command[i] != NULL; i++)
+                cant_param+=1;
+
+        //borro los valores anteriores de opc
+        opc.flag_d = 0;
+        //los : son para decir que la opcion requiere un parametro
+        while((opt=getopt(cant_param,command,"a:dh")) != -1) {
+                switch(opt) {
+
+                case 'a':
+                        opc.flag_t = 1;
+                        valor = optarg;
+                        opc.valor_t = atoi(valor);
+                        break;
+                case 'd':
+                        opc.flag_d = 1;
+                        break;
+                case 'h':
+                        help_args();
+                        return 1;
+                        break;
+                default:
+                        fprintf(stderr, "Opción -%c desconocida.\n", optopt);
+                        return -1;
+                        break;
+                }
+        }
+
+        return 0;  //si hemos procesado los argumentos se devuelve 0
+}
+
+
+//Función args
+int run_args(char **command){
+		char* set1;
+        char* set2;
+        char* c;
+        char*  write_char;
+        int tam_read = 1;
+
+        int flag_d;
+
+        //guardo las opciones en la estructura opc
+        if (procAR_getopt(command)!=0)
+                return -1;
+
+
+        //procedo con la lectura de stdin
+                char buf[tam_read];
+                for (size_t i = 0; i < tam_read; i++)
+                        buf[i] = 0;
+
+                int bytesLeidos=0;
+
+                while( (bytesLeidos = read(0, buf, tam_read))!= 0) {
+                        if (bytesLeidos == -1) {
+                                perror("read stdin");
+                                return -1;
+                        }
+                        for(size_t i =0; i < bytesLeidos; i++) {
+								write_char = &buf[i];
+                                write(1, write_char, 1);
+                        }
+                }
+			return 0;
+
+}
+// Manejador de señal CHLD
+/*
 void func_Signal_Handler(){
         cont_Signal_Handler++;
 }
-
+*/
 
 
 int main(int argc, char** argv)
@@ -1330,7 +1437,7 @@ int main(int argc, char** argv)
                 perror("error");
         }
 
-        //Práctica. Boletin 5. Bloqueo señal SIGINT y SIGCHLD
+        /*//Práctica. Boletin 5. Bloqueo señal SIGINT y SIGCHLD
         sigset_t blocked_signals;
         sigemptyset(&blocked_signals);
         sigaddset(&blocked_signals, SIGINT);
@@ -1348,7 +1455,7 @@ int main(int argc, char** argv)
         struct sigaction sigHandler;
         sigHandler.sa_handler = func_Signal_Handler;
         sigaction(SIGQUIT, &sigHandler, NULL);
-
+*/
         parse_args(argc, argv);
 
         DPRINTF(DBG_TRACE, "STR\n");
