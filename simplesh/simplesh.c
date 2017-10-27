@@ -1174,12 +1174,37 @@ void run_cd(char* dir){
     perror(ruta);
 }
 
+// Manejador de señal CHLD
+
+void func_Signal_Handler(){
+	cont_Signal_Handler++;
+}
+
 
 
 int main(int argc, char** argv)
 {
     char* buf;
     struct cmd* cmd;
+
+    //Práctica. Boletin 5. Bloqueo señal SIGINT y SIGCHLD
+    sigset_t blocked_signals;
+    sigemptyset(&blocked_signals);
+    sigaddset(&blocked_signals, SIGINT);
+    sigaddset(&blocked_signals, SIGQUIT);
+
+    if (sigprocmask(SIG_BLOCK, &blocked_signals, NULL) == -1){
+	perror("sigprocmask");
+	exit(EXIT_FAILURE);
+    }
+
+
+
+
+    //Práctica. Boletin 5. Instalar manejador de señal para señal SIGQUIT
+    struct sigaction sigHandler;
+    sigHandler.sa_handler = func_Signal_Handler;
+    sigaction(SIGQUIT, &sigHandler, NULL);	
 
     parse_args(argc, argv);
 
