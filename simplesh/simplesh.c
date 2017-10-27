@@ -814,7 +814,11 @@ int run_cmd(struct cmd* cmd)
             lcmd = (struct listcmd*) cmd;
             if(run_cmd(lcmd->left)==1)
                 return 1;
+<<<<<<< Updated upstream
             if(run_cmd(lcmd->right)==1)
+=======
+            if(run_cmd(lcmd->right))
+>>>>>>> Stashed changes
                     return 1;
             break;
 

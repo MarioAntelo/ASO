@@ -1,0 +1,94 @@
+{
+    "setup": {
+        "shell": "simplesh",
+        "prompt": "alumno@.*> ",
+        "timeout": 3,
+        "cmds": [
+            "dd if=/dev/urandom of=large_file bs=4k count=16k"
+        ],
+        "verbose": 1
+    },
+    "tests": [
+        {
+            "cmd": "echo a1b2c3d4 | trod abcd ABCD",
+            "out": "^A1B2C3D4$"
+        },
+        {
+            "cmd": "echo a1b2c3d4 | trod abcd",
+            "out": "^run_trod: Se debe especificar tanto SET1 como SET2"
+        },
+        {
+            "cmd": "echo a1b2c3d4 | trod abcd ABCD 1234",
+            "out": "^run_trod: Se debe especificar tanto SET1 como SET2"
+        },
+        {
+            "cmd": "echo a1b2c3d4 | trod abcd ABC",
+            "out": "^run_trod: SET1 y SET2 deben tener el mismo tamaño"
+        },
+        {
+            "cmd": "echo a1b2c3d4 | trod -t 1 abcd ABCD",
+            "out": "^A1B2C3D4$"
+        },
+        {
+            "cmd": "echo a1b2c3d4 | trod -t 1024 abcd ABCD",
+            "out": "^A1B2C3D4$"
+        },
+        {
+            "cmd": "echo a1b2c3d4 | trod -t 0 abcd ABCD",
+            "out": "^run_trod: Tamaño no válido"
+        },
+        {
+            "cmd": "echo a1b2c3d4 | trod -d abcd",
+            "out": "^1234$"
+        },
+        {
+            "cmd": "echo a1b2c3d4 | trod -d abcd ABCD",
+            "out": "^run_trod: Se debe especificar sólo SET1"
+        },
+        {
+            "cmd": "echo a1b2c3d4 | trod -t 1 -d abcd ABCD",
+            "out": "^run_trod: Se debe especificar sólo SET1"
+        },
+        {
+            "cmd": "echo -n a1b2c3d4 | trod -d 1234abcd > trod_file ; wc -l trod_file",
+            "out": "^0.*trod_file$"
+        },
+        {
+            "cmd": "echo a1b2c3d4 | trod -t 1024 -d 1234abcd",
+            "out": "^$"
+        },
+        {
+            "cmd": "echo aaaabbbbccccdddd | trod dcba 1234",
+            "out": "^4444333322221111$"
+        },
+        {
+            "cmd": "echo -n abcdefghijklmnopqrstuvwxyz | trod -t 1024 abcdefghijklmnopqrstuvwxyz 12345678901234567890123456 | wc -c",
+            "out": "^26$"
+        },
+        {
+            "cmd": "cat large_file | trod -t 1024 abcde12345 12345abcde | trod -t 1024 12345abcde abcde12345 > another_large_file ; diff -s large_file another_large_file",
+            "out": "^Los archivos large_file y another_large_file son idénticos$"
+        },
+
+        {
+            "cmd": "echo aaaabbbcccdddd | trod -c -d abcd",
+            "out": "^run_trod: Parámetros incompatibles"
+        },
+        {
+            "cmd": "echo aaabbbcccddddddcccbbbaaa | trod -c abcd",
+            "out": "^abcdcba$"
+        },
+        {
+            "cmd": "echo aaabbbcccddddddcccbbbaaa | trod -t 1 -c abcd",
+            "out": "^abcdcba$"
+        },
+        {
+            "cmd": "echo aaabbbcccddddddcccbbbaaa | trod -t 1024 -c abcd",
+            "out": "^abcdcba$"
+        },
+        {
+            "cmd": "echo -n abbbcddefffghhijjjkllmnnopppqrrsttuvvwxxyzz | trod -t 1024 -c abcdefghijklmnopqrstuvwxyz | wc -c",
+            "out": "^26$"
+        }
+    ]
+}

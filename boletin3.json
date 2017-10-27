@@ -1,0 +1,58 @@
+{
+    "setup": {
+        "shell": "simplesh",
+        "prompt": "alumno@.*> ",
+        "timeout": 3,
+        "cmds": [
+            "touch doc1.txt",
+            "touch doc2.txt",
+            "touch doc3.txt",
+            "touch del4.txt",
+            "touch del5.txt",
+            "touch del6.txt"
+        ],
+        "verbose": 1
+    },
+    "tests": [
+        {
+            "cmd": "find . -name *.txt | sort | args | tail -1",
+            "out": "^\\./doc3.txt$"
+        },
+        {
+            "cmd": "find . -name *.txt | sort | args wc | tail -1",
+            "out": "^0 0 0 \\./doc3.txt$"
+        },
+        {
+            "cmd": "echo -n doc1.txt_doc2.txt%doc3.txt | args -d _% -- ls -l | tail -1 | cut -d - -f 2",
+            "out": "^rw*x*$"
+        },
+        {
+            "cmd": "echo -n doc1.txt_docX.txt_doc3.txt | args -d _ -- ls | tail -1",
+            "out": "^ls: no se puede acceder a 'docX.txt': No existe el archivo o el directorio\\r\\ndoc1.txt$"
+        },
+        {
+            "cmd": "echo -n doc1.txt_docX.txt_doc3.txt | args -d_ -- find -name",
+            "out": "^\\./doc1.txt.*\\n\\./doc3.txt$"
+        },
+        {
+            "cmd": "cut -d: -f1 < /etc/passwd | sort | args | grep alumno",
+            "out": "^alumno$"
+        },
+        {
+            "cmd": "find . -name del*.txt | args rm ; ls del4.txt",
+            "out": "^ls: no se puede acceder a 'del4.txt': No existe el archivo o el directorio$"
+        },
+        {
+            "cmd": "echo -n doc1.txt-doc2.txt-doc3.txt-doc1.txt-doc2.txt-doc3.txt | args -d - -p 6 ls | grep doc | wc -l",
+            "out": "^6$"
+        },
+        {
+            "cmd": "echo -n doc1.txt-docX.txt-doc3.txt | args -d - -p 3 -- ls -l | grep doc | wc -l",
+            "out": "^ls: no se puede acceder a 'docX.txt': No existe el archivo o el directorio\\r\\n2$"
+        },
+        {
+            "cmd": "echo -n  1-1-1-1-1-1 | args -d - -p 6 -- sleep",
+            "out": "^$"
+        }
+    ]
+}

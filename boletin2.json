@@ -69,8 +69,8 @@
             "out": "^run_cd: No existe el directorio 'directorio'\\r\\nsimplesh: cwd: /tmp/tmp.*$"
         },
         {
-            "cmd": "cd dir > emptyfile ; cwd",
-            "out": "^simplesh: cwd: /tmp/tmp.*/dir$"
+            "cmd": "echo 1 > emptyfile ; cd dir >> emptyfile ; cwd ; cat ../emptyfile",
+            "out": "^simplesh: cwd: /tmp/tmp.*/dir\\r\\n1$"
         },
         {
             "cmd": "exit | cwd",
@@ -90,7 +90,7 @@
         },
         {
             "cmd": "exit & ; cwd",
-            "out": "^simplesh: cwd: /tmp/tmp.*$"
+            "out": "^(\\[[0-9]{1,5}\\]\\r\\n){0,1}simplesh: cwd: /tmp/tmp.*$"
         }
     ]
 }
