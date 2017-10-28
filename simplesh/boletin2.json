@@ -1,7 +1,7 @@
 {
     "setup": {
         "shell": "simplesh",
-        "prompt": "alumno@.*> ",
+        "prompt": "ubuntu@.*> ",
         "timeout": 3,
         "cmds": [
             "touch f1",
@@ -54,7 +54,7 @@
         },
         {
             "cmd": "cd ; cwd",
-            "out": "^simplesh: cwd: /home/alumno$"
+            "out": "^simplesh: cwd: /home/ubuntu$"
         },
         {
             "cmd": "cd -",

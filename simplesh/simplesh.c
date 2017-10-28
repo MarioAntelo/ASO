@@ -18,9 +18,11 @@
 
 
 //#define NDEBUG // Translate asserts and DMACROS into no ops
-
+#define _POSIX_SOURCE
+#define _POSIX_C_SOURCE 199309L
 #include <assert.h>
 #include <errno.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <stdarg.h>
@@ -33,6 +35,8 @@
 #include <sys/stat.h>
 #include <pwd.h>
 #include <libgen.h>
+#include <sys/wait.h>
+
 
 // Librería readline
 #include <readline/readline.h>
@@ -48,6 +52,7 @@ static const char* VERSION = "0.17";
 static const size_t PATH_MAX = 100;
 static const int low_read =1;
 static const int high_read = 1048576; // 1 MB
+static int hijo_fin = 0; // 1 MB
 
 // Niveles de depuración
 #define DBG_CMD   (1 << 0)
@@ -56,33 +61,33 @@ static const int high_read = 1048576; // 1 MB
 static int g_dbg_level = 0;
 
 #ifndef NDEBUG
-#define DPRINTF(dbg_level, fmt, ...)                            \
-        do {                                                        \
-                if (dbg_level & g_dbg_level)                            \
-                        fprintf(stderr, "%s:%d:%s(): " fmt,                 \
-                                __FILE__, __LINE__, __func__, ## __VA_ARGS__);       \
+#define DPRINTF(dbg_level, fmt, ...)                                                        \
+        do {                                                                                                                \
+                if (dbg_level & g_dbg_level)                                                        \
+                        fprintf(stderr, "%s:%d:%s(): " fmt,                                 \
+                                __FILE__, __LINE__, __func__, ## __VA_ARGS__);              \
         } while ( 0 )
 
-#define DBLOCK(dbg_level, block)                                \
-        do {                                                        \
-                if (dbg_level & g_dbg_level)                            \
-                        block;                                              \
+#define DBLOCK(dbg_level, block)                                                                \
+        do {                                                                                                                \
+                if (dbg_level & g_dbg_level)                                                        \
+                        block;                                                                                            \
         } while( 0 );
 #else
 #define DPRINTF(dbg_level, fmt, ...)
 #define DBLOCK(dbg_level, block)
 #endif
 
-#define TRY(x)                                                  \
-        do {                                                        \
-                int __rc = (x);                                         \
-                if( __rc < 0 ) {                                        \
-                        fprintf(stderr, "%s:%d:%s: TRY(%s) failed\n",       \
-                                __FILE__, __LINE__, __func__, # x);          \
-                        fprintf(stderr, "ERROR: rc=%d errno=%d (%s)\n",     \
-                                __rc, errno, strerror(errno));              \
-                        exit(EXIT_FAILURE);                                 \
-                }                                                       \
+#define TRY(x)                                                                                                    \
+        do {                                                                                                                \
+                int __rc = (x);                                                                                 \
+                if( __rc < 0 ) {                                                                                \
+                        fprintf(stderr, "%s:%d:%s: TRY(%s) failed\n",             \
+                                __FILE__, __LINE__, __func__, # x);                   \
+                        fprintf(stderr, "ERROR: rc=%d errno=%d (%s)\n",         \
+                                __rc, errno, strerror(errno));                            \
+                        exit(EXIT_FAILURE);                                                                 \
+                }                                                                                                             \
         } while( 0 )
 
 
@@ -101,6 +106,7 @@ int run_command_interno(char**);
 void run_cwd();
 int run_cd(char*);
 int run_trod(char**);
+<<<<<<< Updated upstream
 int run_args(char**);
 
 // Estructura con las opciones que contiene el comando trod
@@ -118,12 +124,47 @@ struct opc_args{
 
 //variables necesarias
 static struct opc_trod opc;
+=======
+int run_bjobs(char**);
+>>>>>>> Stashed changes
 
 //Declaraciones para variables de entorno
 extern char **environ;
 int setenv(const char *, const char *, int);
 int unsetenv(const char *);
 int clearenv(void);
+
+//estructura con las opciones que contiene el comando trod
+struct opc_trod {
+        int flag_t;
+        int flag_d;
+        int flag_c;
+        int valor_t;
+};
+
+//variables necesarias
+static struct opc_trod opc;
+
+int sigemptyset(sigset_t *);
+int sigaddset(sigset_t *s, int );
+int sigprocmask(int, const sigset_t *, sigset_t *);
+pid_t waitpid(pid_t, int *, int );
+
+typedef struct proc {
+        int pid;
+        struct proc * sig;
+}proc;
+
+typedef struct ListaProceso {
+        int procesos;
+        struct proc *inicio;
+}ListaProceso;
+
+struct ListaProceso *lista;
+void crea_listaProc();
+void insertarProceso(int pid);
+void eliminarProceso(int pid);
+
 
 // Imprime el mensaje de error
 void error(const char *fmt, ...)
@@ -793,6 +834,7 @@ int run_cmd(struct cmd* cmd)
         struct subscmd* scmd;
         int p[2];
         int fd;
+        pid_t pid;
 
         DPRINTF(DBG_TRACE, "STR\n");
 
@@ -801,22 +843,28 @@ int run_cmd(struct cmd* cmd)
         switch(cmd->type)
         {
         case EXEC:
+
                 ecmd = (struct execcmd*) cmd;
 
                 //compruebo si el comando introducido es un comando interno
                 int result = run_command_interno(ecmd->argv);
                 if (result != -1)
                         return result;
-
                 //comandos no internos
-                if (fork_or_panic("fork EXEC") == 0)
+                pid = fork_or_panic("fork EXEC");
+                if ( pid == 0)
                         exec_cmd(ecmd);
-                TRY( wait(NULL) );
+                else{
+                        if(waitpid(pid,NULL,0) < 0) {
+                                perror("waitpid");
+                        }
+                }
                 break;
 
         case REDR:
                 rcmd = (struct redrcmd*) cmd;
-                if (fork_or_panic("fork REDR") == 0)
+                pid = fork_or_panic("fork REDR");
+                if ( pid == 0)
                 {
                         TRY( close(rcmd->fd) );
                         //a la llamada open se agrega el modo S_IRWX_
@@ -830,8 +878,11 @@ int run_cmd(struct cmd* cmd)
                         else
                                 run_cmd(rcmd->cmd);
                         exit(EXIT_SUCCESS);
+                }else{
+                        if(waitpid(pid,NULL,0) < 0) {
+                                perror("waitpid");
+                        }
                 }
-                TRY( wait(NULL) );
                 break;
 
         case LIST:
@@ -885,13 +936,18 @@ int run_cmd(struct cmd* cmd)
 
         case BACK:
                 bcmd = (struct backcmd*)cmd;
-                if (fork_or_panic("fork BACK") == 0)
+                pid = fork_or_panic("fork BACK");
+                if (pid == 0)
                 {
                         if (bcmd->cmd->type == EXEC)
                                 exec_cmd((struct execcmd*) bcmd->cmd);
                         else
                                 run_cmd(bcmd->cmd);
                         exit(EXIT_SUCCESS);
+                }
+                else{
+                        insertarProceso(pid);
+                        printf("[%d]\n", pid);
                 }
                 break;
 
@@ -1088,7 +1144,7 @@ char* get_cmd()
                 exit(EXIT_FAILURE);
         }
         //conformamos la linea a mostrar en el prompt
-        char prompt[PATH_MAX]; //= malloc();// @ > space y el 0 al final
+        char prompt[PATH_MAX];   //= malloc();// @ > space y el 0 al final
         int i = sprintf(prompt, "%s@%s> ", pw->pw_name, dirname);
         //comprobamos que el tamaño del buffer sea suficiente
         if(i <=0 ) {
@@ -1116,10 +1172,10 @@ char* get_cmd()
 
 void help(int argc, char **argv){
         fprintf(stdout, "Usage: %s [-d N] [-h]\n\
-            shell simplesh v%s\n\
-            Options: \n\
-            -d set debug level to N\n\
-            -h help\n\n",
+          shell simplesh v%s\n\
+          Options: \n\
+          -d set debug level to N\n\
+          -h help\n\n",
                 argv[0], VERSION);
 }
 
@@ -1155,8 +1211,13 @@ int run_command_interno(char **command){
                         run_cd(command[1]);
                 }else if(strcmp(command[0], "trod") == 0) {
                         run_trod(command);
+<<<<<<< Updated upstream
                 }else if(strcmp(command[0], "args") == 0){
                 		run_args(command);
+=======
+                }else if(strcmp(command[0], "bjobs") == 0) {
+                        run_bjobs(command);
+>>>>>>> Stashed changes
                 }else
                         return -1;
         }
@@ -1262,7 +1323,7 @@ int procesa_getopt(char **command){
                 }
         }
 
-        return 0;  //si hemos procesado los argumentos se devuelve 0
+        return 0;   //si hemos procesado los argumentos se devuelve 0
 }
 
 //Función trod
@@ -1271,6 +1332,7 @@ int run_trod(char **command){
         char* set1;
         char* set2;
         char* c;
+        char actual, ant;
         char*  write_char;
         int tam_read = 1;
         //guardo las opciones en la estructura opc
@@ -1317,11 +1379,14 @@ int run_trod(char **command){
                         for(size_t i =0; i < bytesLeidos; i++) {
                                 //compruebo todos los byte leidos
                                 c = strchr(set1, buf[i]);
-                                if(c != NULL)
-                                        write_char = &set2[c-set1];
-                                else
-                                        write_char = &buf[i];
-                                write(1, write_char, 1);
+                                if(c != NULL) {
+                                        if( opc.flag_d != 1) {
+                                                write_char = &set2[c-set1];
+                                                write(1, write_char, 1);
+                                        }
+                                }else
+                                        write(1, &buf[i], 1);
+
                         }
                 }
 
@@ -1331,6 +1396,7 @@ int run_trod(char **command){
 
         return 0;
 }
+<<<<<<< Updated upstream
 
 
 
@@ -1423,10 +1489,125 @@ void func_Signal_Handler(){
         cont_Signal_Handler++;
 }
 */
+=======
 
 
-int main(int argc, char** argv)
-{
+// Manejador de señal CHLD
+
+void signal_handler(int sig, siginfo_t *info, void *context){
+        //para matar todos los procesos zombie
+        while (waitpid(-1, NULL, WNOHANG) > 0) {
+        }
+        switch(sig) {
+        case SIGCHLD:
+                eliminarProceso(info->si_pid);
+                break;
+        }
+}
+void crea_listaProc(){
+        lista=(ListaProceso*)malloc(sizeof(ListaProceso*));
+        lista->procesos= 0;
+        lista->inicio = NULL;
+}
+void insertarProceso(int pid){
+        proc *pp = lista->inicio;
+        //creo la proc que contendra la informacion del proceso
+        proc *aux = (proc *)malloc(sizeof(proc));
+        aux->pid = pid;
+        aux->sig = NULL;
+
+        //compruebo si la lista esta vacia
+        if(lista->procesos == 0)
+                lista->inicio = aux;
+        else{
+                while(pp->sig != NULL)
+                        pp = pp->sig;
+                pp->sig =  aux;
+        }
+        //aumento la cantidad de procesos en segundo plano
+        lista->procesos++;
+}
+void eliminarProceso(int pid){
+        proc *pp = lista->inicio;
+        proc *ppAnt = lista->inicio;
+
+        if(lista->procesos !=0) {
+                //Con esto comprobamos si el proceso a eliminar es el primero y lo quitamos de la lista sino se busca
+                if(lista->inicio->pid == pid)
+                        lista->inicio = lista->inicio->sig;
+                else
+                        while( (pp != NULL) && (pp->pid != pid) ) {
+                                ppAnt=pp;
+                                pp = pp->sig;
+                        }
+
+                if (pp != NULL) {
+                        lista->procesos--;
+                        printf("[%d]\n", pid);
+                        proc *aux = pp;
+                        pp = pp->sig;
+                        ppAnt->sig=pp;
+                        free(aux);
+                }
+                if (lista->procesos==0)
+                        lista->inicio= NULL;
+        }
+}
+
+void help_bjobs(){
+        printf("Uso: bjobs [-k] [-h] \n");
+        printf("\tOpciones:\n");
+        printf("\t-k Mata todos los procesos en segundo plano\n");
+        printf("\t-h help\n");
+}
+int run_bjobs(char **command){
+        proc *pp = lista->inicio;
+        int pid;
+        int cant_param=0;
+        int opt =1;
+>>>>>>> Stashed changes
+
+        for(int i=0; command[i] != NULL; i++)
+                cant_param+=1;
+
+        //borro los valores anteriores de opc
+        int flag_k = 0;
+        //los : son para decir que la opcion requiere un parametro
+        if ( cant_param > 1) {
+                while((opt=getopt(cant_param,command,"kh")) != -1) {
+                        switch(opt) {
+                        case 'k':
+                                flag_k = 1;
+                                break;
+                        case 'h':
+                                help_bjobs();
+                                return 1;
+                                break;
+                        default:
+                                if(isprint(optopt))
+                                        fprintf(stderr, "Opción -%c desconocida.\n", optopt);
+                                else
+                                        fprintf(stderr, "Caracter `\\x%x' de opción desconocida.\n", optopt);
+                                return -1;
+                                break;
+                        }
+                }
+        }
+        if(lista->procesos == 0)
+                printf("No hay procesos en segundo plano activos.\n");
+        while(pp != NULL) {
+                pid=pp->pid;
+                pp=pp->sig;
+                if (flag_k ==1) {
+
+                        kill(pid, SIGKILL);
+                }else
+                        printf("[%d]\n", pid);
+        }
+        return 0;
+}
+
+int main(int argc, char** argv){
         char* buf;
         struct cmd* cmd;
         int salir = 0;
@@ -1436,7 +1617,13 @@ int main(int argc, char** argv)
         if (result!=0) {
                 perror("error");
         }
+        crea_listaProc();
+        sigset_t blocked;
+        sigemptyset(&blocked);
+        sigaddset(&blocked, SIGQUIT);
+        sigaddset(&blocked, SIGINT);
 
+<<<<<<< Updated upstream
         /*//Práctica. Boletin 5. Bloqueo señal SIGINT y SIGCHLD
         sigset_t blocked_signals;
         sigemptyset(&blocked_signals);
@@ -1444,10 +1631,14 @@ int main(int argc, char** argv)
         sigaddset(&blocked_signals, SIGQUIT);
 
         if (sigprocmask(SIG_BLOCK, &blocked_signals, NULL) == -1) {
+=======
+        if (sigprocmask(SIG_BLOCK, &blocked, NULL) == -1) {
+>>>>>>> Stashed changes
                 perror("sigprocmask");
                 exit(EXIT_FAILURE);
         }
 
+<<<<<<< Updated upstream
 
 
 
@@ -1456,6 +1647,19 @@ int main(int argc, char** argv)
         sigHandler.sa_handler = func_Signal_Handler;
         sigaction(SIGQUIT, &sigHandler, NULL);
 */
+=======
+        //Práctica. Boletin 5. Instalar manejador de señal para señal SIGCHLD
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sa_sigaction = &signal_handler;
+        sa.sa_flags = SA_SIGINFO;
+        sigemptyset(&sa.sa_mask);
+        if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+                perror("sigaction 1");
+                exit(EXIT_FAILURE);
+        }
+
+>>>>>>> Stashed changes
         parse_args(argc, argv);
 
         DPRINTF(DBG_TRACE, "STR\n");
