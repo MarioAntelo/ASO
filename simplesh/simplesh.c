@@ -106,7 +106,6 @@ int run_command_interno(char**);
 void run_cwd();
 int run_cd(char*);
 int run_trod(char**);
-<<<<<<< Updated upstream
 int run_args(char**);
 
 // Estructura con las opciones que contiene el comando trod
@@ -119,32 +118,18 @@ struct opc_trod {
 
 // Estructura con las opciones que contiene el comando args
 struct opc_args{
-		int flag_h;	
+		int flag_h;
 };
 
 //variables necesarias
 static struct opc_trod opc;
-=======
 int run_bjobs(char**);
->>>>>>> Stashed changes
 
 //Declaraciones para variables de entorno
 extern char **environ;
 int setenv(const char *, const char *, int);
 int unsetenv(const char *);
 int clearenv(void);
-
-//estructura con las opciones que contiene el comando trod
-struct opc_trod {
-        int flag_t;
-        int flag_d;
-        int flag_c;
-        int valor_t;
-};
-
-//variables necesarias
-static struct opc_trod opc;
-
 int sigemptyset(sigset_t *);
 int sigaddset(sigset_t *s, int );
 int sigprocmask(int, const sigset_t *, sigset_t *);
@@ -1211,13 +1196,10 @@ int run_command_interno(char **command){
                         run_cd(command[1]);
                 }else if(strcmp(command[0], "trod") == 0) {
                         run_trod(command);
-<<<<<<< Updated upstream
                 }else if(strcmp(command[0], "args") == 0){
                 		run_args(command);
-=======
                 }else if(strcmp(command[0], "bjobs") == 0) {
                         run_bjobs(command);
->>>>>>> Stashed changes
                 }else
                         return -1;
         }
@@ -1386,7 +1368,12 @@ int run_trod(char **command){
                                         }
                                 }else
                                         write(1, &buf[i], 1);
-
+                                if (fsync(1) == -1) {
+                                   if( errno != EINVAL){
+                                     perror("run_trod");
+                                     return -1;
+                                   }
+                                }
                         }
                 }
 
@@ -1396,11 +1383,6 @@ int run_trod(char **command){
 
         return 0;
 }
-<<<<<<< Updated upstream
-
-
-
-
 //******************
 //***Comando args
 void help_args(){
@@ -1483,14 +1465,6 @@ int run_args(char **command){
 			return 0;
 
 }
-// Manejador de señal CHLD
-/*
-void func_Signal_Handler(){
-        cont_Signal_Handler++;
-}
-*/
-=======
-
 
 // Manejador de señal CHLD
 
@@ -1565,7 +1539,6 @@ int run_bjobs(char **command){
         int pid;
         int cant_param=0;
         int opt =1;
->>>>>>> Stashed changes
 
         for(int i=0; command[i] != NULL; i++)
                 cant_param+=1;
@@ -1581,14 +1554,14 @@ int run_bjobs(char **command){
                                 break;
                         case 'h':
                                 help_bjobs();
-                                return 1;
+                                return 0;
                                 break;
                         default:
                                 if(isprint(optopt))
                                         fprintf(stderr, "Opción -%c desconocida.\n", optopt);
                                 else
                                         fprintf(stderr, "Caracter `\\x%x' de opción desconocida.\n", optopt);
-                                return -1;
+                                return 0;
                                 break;
                         }
                 }
@@ -1623,31 +1596,6 @@ int main(int argc, char** argv){
         sigaddset(&blocked, SIGQUIT);
         sigaddset(&blocked, SIGINT);
 
-<<<<<<< Updated upstream
-        /*//Práctica. Boletin 5. Bloqueo señal SIGINT y SIGCHLD
-        sigset_t blocked_signals;
-        sigemptyset(&blocked_signals);
-        sigaddset(&blocked_signals, SIGINT);
-        sigaddset(&blocked_signals, SIGQUIT);
-
-        if (sigprocmask(SIG_BLOCK, &blocked_signals, NULL) == -1) {
-=======
-        if (sigprocmask(SIG_BLOCK, &blocked, NULL) == -1) {
->>>>>>> Stashed changes
-                perror("sigprocmask");
-                exit(EXIT_FAILURE);
-        }
-
-<<<<<<< Updated upstream
-
-
-
-        //Práctica. Boletin 5. Instalar manejador de señal para señal SIGQUIT
-        struct sigaction sigHandler;
-        sigHandler.sa_handler = func_Signal_Handler;
-        sigaction(SIGQUIT, &sigHandler, NULL);
-*/
-=======
         //Práctica. Boletin 5. Instalar manejador de señal para señal SIGCHLD
         struct sigaction sa;
         memset(&sa, 0, sizeof(sa));
@@ -1659,7 +1607,6 @@ int main(int argc, char** argv){
                 exit(EXIT_FAILURE);
         }
 
->>>>>>> Stashed changes
         parse_args(argc, argv);
 
         DPRINTF(DBG_TRACE, "STR\n");
