@@ -443,3 +443,68 @@ sys_pipe(void)
   fd[1] = fd1;
   return 0;
 }
+
+
+/*Boletín 7. Llamada al sistema dup2*/
+int
+sys_dup2(void){
+
+	struct file *fd1;
+	struct file *fd2;
+
+	int newfd;
+
+// ¿Existe el primer descriptor pasado por parametro?
+
+	if (argfd(0, 0, &fd1) < 0){
+		return -1;
+	}
+
+// Comprueba que "newfd" es un indice de tabla de archivos valido
+	
+	if (argint(1, &newfd) < 0){
+		return -1;
+	}
+
+/*
+Si el nuevo descriptor "newfd" no tiene asociado ninguna
+estructura de tipo file es que "newfd" esta vacio, por lo
+que podemos duplicar de forma segura el descriptor en el nuevo
+*/
+
+	if (proc->ofile[newfd] == 0){
+		proc->ofile[newfd] = fd1;
+		filedup(fd1);
+		return newfd;
+	}
+
+/*
+Si el descriptor de fichero nuevo ya existe, se recupera el
+puntero a memoria de ese descriptor
+*/
+
+	else if (argfd(1, &newfd, &fd2) < 0){
+		return -1;
+	}
+
+/*
+Comprobamos si el puntero de "fd1" es igual a "fd2",
+por lo que, en caso de ser cierto, no habría que hacer el duplicado,
+tan solo devolver el número del descriptor
+*/
+	if (fd1 == fd2){
+		return newfd;
+	}
+
+//Decrementamos contador ref de "fd2"
+	if (fd2->ref > 0){
+	fileclose(fd2);
+	}
+
+//Realizamos el duplicado del descriptor de fichero
+	proc->ofile[newfd] = fd1;
+
+//Incrementamos el valor del contador ref de "fd1"
+	filedup(fd1);
+		return newfd;
+}
