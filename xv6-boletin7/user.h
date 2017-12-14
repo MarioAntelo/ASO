@@ -23,6 +23,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int date(struct rtcdate*);	//Boletín 7. Llamada al sistema date.
+int dup2(int, int);		//Boletín 7. Llamada al sistema dup2.
 
 // ulib.c
 int stat(char*, struct stat*);

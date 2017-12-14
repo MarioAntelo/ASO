@@ -29,3 +29,5 @@ SYSCALL(getpid)
 SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
+SYSCALL(date)		//Boletín 7. Llamada al sistema date.
+SYSCALL(dup2)		//Boletín 7. Llamada al sistema dup2.

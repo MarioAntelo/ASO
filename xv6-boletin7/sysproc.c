@@ -89,3 +89,17 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+//Boletín 7. Llamada al sistema date.
+
+int sys_date(void){
+
+struct rtcdate *k_r;
+
+	if(argptr(0, (void*)&k_r, sizeof(*k_r)) <0)
+  		return -1;
+  	cmostime(k_r);
+
+  	return 0;
+}
+

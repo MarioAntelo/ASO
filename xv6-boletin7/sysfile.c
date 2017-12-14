@@ -66,6 +66,23 @@ sys_dup(void)
   return fd;
 }
 
+/*Boletín 7. Llamada al sistema dup2*/
+int
+sys_dup2(void)
+{
+  struct file *f;
+  int oldfd, newfd;
+
+  if(argfd(0, &oldfd, &f) < 0)
+    return -1;
+
+  if(argfd(0, &newfd, &f) < 0)
+    return -1;
+
+  filedup(f);
+  return fd;
+}
+
 int
 sys_read(void)
 {
