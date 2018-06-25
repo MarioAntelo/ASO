@@ -1426,15 +1426,15 @@ int procAR_getopt(char **command){
         //borro los valores anteriores de opc
         opc.flag_d = 0;
         //los : son para decir que la opcion requiere un parametro
-        while((opt=getopt(cant_param,command,"a:dh")) != -1) {
+        while((opt=getopt(cant_param,command,"d:p:h")) != -1) {
                 switch(opt) {
 
-                case 'a':
+                case 'd':
                         opc.flag_t = 1;
                         valor = optarg;
                         opc.valor_t = atoi(valor);
                         break;
-                case 'd':
+                case 'p':
                         opc.flag_d = 1;
                         break;
                 case 'h':
@@ -1454,38 +1454,37 @@ int procAR_getopt(char **command){
 
 //Función args
 int run_args(char **command){
-		char* set1;
+        char* set1;
         char* set2;
         char* c;
         char*  write_char;
         int tam_read = 1;
-
         int flag_d;
 
+
         //guardo las opciones en la estructura opc
+
         if (procAR_getopt(command)!=0)
                 return -1;
 
-
         //procedo con la lectura de stdin
+
                 char buf[tam_read];
                 for (size_t i = 0; i < tam_read; i++)
                         buf[i] = 0;
 
                 int bytesLeidos=0;
-
                 while( (bytesLeidos = read(0, buf, tam_read))!= 0) {
                         if (bytesLeidos == -1) {
                                 perror("read stdin");
                                 return -1;
                         }
-                        for(size_t i =0; i < bytesLeidos; i++) {
-								write_char = &buf[i];
+                       for(size_t i =0; i < bytesLeidos; i++) {
+                                write_char = &buf[i];
                                 write(1, write_char, 1);
                         }
                 }
-			return 0;
-
+            return 0;
 }
 
 // Manejador de señal CHLD
