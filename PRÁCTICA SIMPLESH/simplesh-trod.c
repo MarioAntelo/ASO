@@ -6,20 +6,12 @@
  * Facultad de Informática de la Universidad de Murcia
  *
  * Alumnos: ANTELO RIBERA, MARIO
-<<<<<<< HEAD
- *          PIÑAS AYALA, MARTIN
- *
- * Convocatoria: JULIO
- */
-
-=======
  *          APELLIDOS, NOMBRE
  *
  * Convocatoria: FEBRERO
  */
 
 
->>>>>>> master
 /*
  * Ficheros de cabecera
  */
@@ -27,11 +19,7 @@
 
 //#define NDEBUG // Translate asserts and DMACROS into no ops
 #define _POSIX_SOURCE
-<<<<<<< HEAD
-#define _GNU_SOURCE
-=======
 #define _POSIX_C_SOURCE 199309L
->>>>>>> master
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
@@ -62,12 +50,7 @@
 
 static const char* VERSION = "0.17";
 static const size_t PATH_MAX = 100;
-<<<<<<< HEAD
-static const size_t TAM_MAX = 100;
-static const int low_read =8;
-=======
 static const int low_read =1;
->>>>>>> master
 static const int high_read = 1048576; // 1 MB
 static int hijo_fin = 0; // 1 MB
 
@@ -135,22 +118,11 @@ struct opc_trod {
 
 // Estructura con las opciones que contiene el comando args
 struct opc_args{
-<<<<<<< HEAD
-  int flag_d;
-  int flag_p;
-  int valor_p;
-  char* valor_d;
-=======
 		int flag_h;
->>>>>>> master
 };
 
 //variables necesarias
 static struct opc_trod opc;
-<<<<<<< HEAD
-static struct opc_args opc_arg;
-=======
->>>>>>> master
 int run_bjobs(char**);
 
 //Declaraciones para variables de entorno
@@ -856,10 +828,7 @@ int run_cmd(struct cmd* cmd)
         switch(cmd->type)
         {
         case EXEC:
-<<<<<<< HEAD
-=======
 
->>>>>>> master
                 ecmd = (struct execcmd*) cmd;
 
                 //compruebo si el comando introducido es un comando interno
@@ -1318,12 +1287,7 @@ int procesa_getopt(char **command){
                 case 't':
                         opc.flag_t = 1;
                         valor = optarg;
-<<<<<<< HEAD
-                        //guardo el valor en bytes
-                        opc.valor_t = atoi(valor)*8;
-=======
                         opc.valor_t = atoi(valor);
->>>>>>> master
                         break;
                 case 'd':
                         opc.flag_d = 1;
@@ -1355,10 +1319,6 @@ int run_trod(char **command){
         char*  write_char;
         int tam_read = 1;
         //guardo las opciones en la estructura opc
-<<<<<<< HEAD
-        optind = 1;
-=======
->>>>>>> master
         if (procesa_getopt(command)!=0)
                 return -1;
 
@@ -1409,11 +1369,7 @@ int run_trod(char **command){
 
                 int bytesLeidos=0;
 
-<<<<<<< HEAD
-                while( (bytesLeidos = read(STDIN_FILENO, buf, tam_read))!= 0) {
-=======
                 while( (bytesLeidos = read(0, buf, tam_read))!= 0) {
->>>>>>> master
                         if (bytesLeidos == -1) {
                                 perror("read stdin");
                                 return -1;
@@ -1456,14 +1412,6 @@ void help_args(){
         printf("\tOpciones:\n");
         printf("\t-d DELIMS Caracteres delimitadores entre cadenas para COMANDO\n");
         printf("\t-p NPROCS Número máximo de ejecuciones en paralelo de COMANDO\n");
-<<<<<<< HEAD
-        printf("\t-h help\n");
-}
-
-int args_getopt(char **command){
-        int cant_param=0;
-        int opt = 0;
-=======
         printf("\t--h help\n");
 }
 
@@ -1471,39 +1419,11 @@ int procAR_getopt(char **command){
         int cant_param=0;
         int opt =0;
         char *valor=NULL;
->>>>>>> master
 
         for(int i=0; command[i] != NULL; i++)
                 cant_param+=1;
 
         //borro los valores anteriores de opc
-<<<<<<< HEAD
-        opc_arg.flag_d = 0;
-        opc_arg.valor_d = NULL;
-
-        opc_arg.flag_p = 0;
-        opc_arg.valor_p = 0;
-        //los : son para decir que la opcion requiere un parametro
-        while((opt=getopt(cant_param,command,"d:p:h")) != -1) {
-           switch(opt) {
-                 //Cambio de delimitadores
-              case 'd':
-                  opc_arg.flag_d = 1;
-                  opc_arg.valor_d = optarg;
-              				break;
-              case 'p':
-                  opc_arg.flag_p = 1;
-                  opc_arg.valor_p = atoi(optarg);
-              				break;
-              case 'h':
-                  help_args();
-                  return -1;
-                  break;
-              default:
-                      fprintf(stderr, "Opción -%c desconocida.\n", optopt);
-                      return -1;
-                      break;
-=======
         opc.flag_d = 0;
         //los : son para decir que la opcion requiere un parametro
         while((opt=getopt(cant_param,command,"d:p:h")) != -1) {
@@ -1525,7 +1445,6 @@ int procAR_getopt(char **command){
                         fprintf(stderr, "Opción -%c desconocida.\n", optopt);
                         return -1;
                         break;
->>>>>>> master
                 }
         }
 
@@ -1535,72 +1454,6 @@ int procAR_getopt(char **command){
 
 //Función args
 int run_args(char **command){
-<<<<<<< HEAD
-      char*  args;
-      struct cmd* cmd;
-      struct execcmd* ecmd;
-      int pid ;
-      int indice = 0;
-      int status = 0;
-      int procesos = 1;
-      char *delims =(char*) WHITESPACE;
-
-      char line[TAM_MAX];
-      for (size_t i = 0; i < TAM_MAX; i++)
-              line[i] = 0;
-
-      ecmd = (struct execcmd*) execcmd();
-      //Guardamos las opciones en la estructura opc
-      optind = 1;
-      if (args_getopt(command)!=0)
-              return -1;
-      //Asignamos los bytes que se van a leer
-      if (opc_arg.flag_d == 1) {
-          delims = opc_arg.valor_d;
-      }
-
-      if (command[optind]==NULL){
-           ecmd->argv[0] = "echo";
-           indice++;
-      }else{
-         while (command[optind] != NULL) {
-           ecmd->argv[indice] = command[optind];
-           indice++;
-           optind++;
-         }
-      }
-
-      int bytesLeidos=0;
-      while((bytesLeidos = read(STDIN_FILENO, line, TAM_MAX))!=0){
-          if (opc_arg.flag_p == 1)
-            procesos = opc_arg.valor_p;
-          else
-            procesos = 1;
-
-         char *pChr = strtok (line, delims);
-
-         while (pChr != NULL) {
-             ecmd->argv[indice] = pChr;
-             ecmd->argv[indice+1] = '\0';
-             if ( fork_or_panic("fork ARGS") == 0){
-                 exec_cmd(ecmd);
-                 exit(EXIT_SUCCESS);
-             }
-             else{
-               procesos--;
-               if(procesos == 0){
-                 wait(&status);
-                 procesos++;
-                 if (status != 0 )
-                    exit(EXIT_SUCCESS);
-               }
-             }
-             pChr = strtok (NULL, delims);
-         }
-      }
-
-      return 0;
-=======
         char* set1;
         char* set2;
         char* c;
@@ -1632,7 +1485,6 @@ int run_args(char **command){
                         }
                 }
             return 0;
->>>>>>> master
 }
 
 // Manejador de señal CHLD
@@ -1645,11 +1497,8 @@ void signal_handler(int sig, siginfo_t *info, void *context){
           case SIGCHLD:
                 eliminarProceso(info->si_pid);
                 break;
-<<<<<<< HEAD
-=======
           case SIGPIPE:
                fprintf(stderr, "%s\n", "hola" );
->>>>>>> master
         }
 }
 void crea_listaProc(){
@@ -1740,20 +1589,6 @@ int run_bjobs(char **command){
                         }
                 }
         }
-<<<<<<< HEAD
-        if(lista->procesos > 0)
-                //printf("0\n");
-        {
-          while(pp != NULL) {
-                  pid=pp->pid;
-                  pp=pp->sig;
-                  if (flag_k ==1) {
-                          kill(pid, SIGKILL);
-                  }else
-                          printf("[%d]\n", pid);
-          }
-         }
-=======
         if(lista->procesos == 0)
                 printf("No hay procesos en segundo plano activos.\n");
         while(pp != NULL) {
@@ -1765,7 +1600,6 @@ int run_bjobs(char **command){
                 }else
                         printf("[%d]\n", pid);
         }
->>>>>>> master
         return 0;
 }
 
@@ -1785,37 +1619,22 @@ int main(int argc, char** argv){
         sigaddset(&blocked, SIGQUIT);
         sigaddset(&blocked, SIGINT);
 
-<<<<<<< HEAD
-       if (sigprocmask(SIG_BLOCK, &blocked, NULL) == -1) {
-            perror("sigprocmask");
-            exit(EXIT_FAILURE);
-        }
-
-=======
->>>>>>> master
         //Práctica. Boletin 5. Instalar manejador de señal para señal SIGCHLD
         struct sigaction sa;
         memset(&sa, 0, sizeof(sa));
         sa.sa_sigaction = &signal_handler;
-<<<<<<< HEAD
-        sa.sa_flags = SA_RESTART | SA_SIGINFO;
-=======
         sa.sa_flags = SA_SIGINFO;
->>>>>>> master
         sigemptyset(&sa.sa_mask);
         if (sigaction(SIGCHLD, &sa, NULL) == -1) {
                 perror("sigaction 1");
                 exit(EXIT_FAILURE);
         }
 
-<<<<<<< HEAD
-=======
         if (sigaction(SIGPIPE, &sa, NULL) == -1) {
                 perror("sigaction 1");
                 exit(EXIT_FAILURE);
         }
 
->>>>>>> master
         parse_args(argc, argv);
 
         DPRINTF(DBG_TRACE, "STR\n");
