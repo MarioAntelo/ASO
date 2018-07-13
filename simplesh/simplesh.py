@@ -204,7 +204,7 @@ class ShTest:
             if self.status == ShStatus.SUCCESS:
                 print("'{:20}' << '{:40}'] : ".format(self.out[:20], self.result.strip('\r\n')[:40]), end='')
             elif self.status == ShStatus.FAILURE:
-                print("'{:20}' <> '{:40}'] : ".format(self.out[:20], self.result.strip('\r\n')[:40]), end='')
+                print(" \n\t'{:60}'\n\t '{:132}'] : ".format(self.out[:60], self.result.strip('\r\n')[:125]), end='')
             elif self.status == ShStatus.TIMEOUT:
                 print("{:^67}'] : ".format('TIMEOUT! Prompt not found!'), end='')
             elif self.status == ShStatus.EOFCORE:

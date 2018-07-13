@@ -1,7 +1,7 @@
 {
     "setup": {
         "shell": "simplesh",
-        "prompt": "alumno@.*> ",
+        "prompt": "ubuntu@.*> ",
         "timeout": 3,
         "cmds": [
             "touch doc1.txt",
@@ -35,8 +35,8 @@
             "out": "^\\./doc1.txt.*\\n\\./doc3.txt$"
         },
         {
-            "cmd": "cut -d: -f1 < /etc/passwd | sort | args | grep alumno",
-            "out": "^alumno$"
+            "cmd": "cut -d: -f1 < /etc/passwd | sort | args | grep ubuntu",
+            "out": "^ubuntu$"
         },
         {
             "cmd": "find . -name del*.txt | args rm ; ls del4.txt",
